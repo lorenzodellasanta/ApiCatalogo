@@ -15,6 +15,6 @@ namespace ApiCatalogo.Models
         public int CategoriaId { get; set; }
 
         [JsonIgnore]
-        public Categoria? Categoria { get; set; }
+        public Categoria Categoria { get; set; }
     }
 }

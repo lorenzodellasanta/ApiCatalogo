@@ -17,7 +17,7 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-//Definindo os EndPoints de Categoria
+/*-------------------------------------Definindo EndPoints de Categorias-----------------------------*/
 //EndPoint de Listagem
 app.MapGet("/listaCategorias", async (CatalogoContext db) => await db.Categorias.ToListAsync());
 
@@ -29,13 +29,6 @@ app.MapGet("/listagemCategorias/{id:int}", async (int id, CatalogoContext db) =>
                 ? Results.Ok(categoria)
                 : Results.NotFound("Categoria não encontrada");
 });
-
-//Listagem de Categoria com produto respectivo
-/*
-app.MapGet("/listaCategorias", async (CatalogoContext db) => await db.Categorias
-                                                                     .Include(p => p.Produtos)
-                                                                     .ToListAsync()); 
-*/
 
 //EndPoint de Inserção
 app.MapPost("/categorias", async (Categoria categoria, CatalogoContext db) => 
@@ -83,17 +76,17 @@ app.MapDelete("/categorias/{id:int}", async (int id, CatalogoContext db) =>
     return Results.NoContent();
 });
 
-//Definindo EndPoints de Produtos
+/*-------------------------------------Definindo EndPoints de Produtos-------------------------------*/
 
-app.MapGet("/produtos", async (CatalogoContext db) => db.Produtos.ToListAsync());
+app.MapGet("/produtos", async (CatalogoContext db) => await db.Produtos.ToListAsync());
 
 app.MapGet("/produtos/{id:int}", async (int id, CatalogoContext db) =>
 {
 
     return await db.Produtos.FindAsync(id)
-            is Produto produto
-            ? Results.Ok(produto)
-            : Results.NotFound();
+        is Produto produto
+        ? Results.Ok(produto)
+        : Results.NotFound();
 });
 
 app.MapPost("/produtos/", async (Produto produto, CatalogoContext db) =>
@@ -101,20 +94,21 @@ app.MapPost("/produtos/", async (Produto produto, CatalogoContext db) =>
 
     db.Produtos.Add(produto);
     await db.SaveChangesAsync();
+
     return Results.Created($"/produtos/{produto.ProdutoId}", produto);
 });
 
 app.MapPut("/produtos/{id:int}", async (int id, Produto produto, CatalogoContext db) =>
 {
 
-    if(produto.ProdutoId != id)
+    if (produto.ProdutoId != id)
     {
-        return Results.BadRequest("Produto não existente!");
+        return Results.BadRequest();
     }
 
     var produtoDB = await db.Produtos.FindAsync(id);
 
-    if (produtoDB is null) return Results.NotFound("Produto não Encontrado!");
+    if(produtoDB is null) return Results.NotFound();
 
     produtoDB.Nome = produto.Nome;
     produtoDB.Descricao = produto.Descricao;
@@ -123,25 +117,26 @@ app.MapPut("/produtos/{id:int}", async (int id, Produto produto, CatalogoContext
     produtoDB.Estoque = produto.Estoque;
     produtoDB.Imagem = produto.Imagem;
     produtoDB.CategoriaId = produto.CategoriaId;
-    
+
     await db.SaveChangesAsync();
     return Results.Ok(produtoDB);
-
 });
 
 app.MapDelete("/produtos/{id:int}", async (int id, CatalogoContext db) =>
+{
+
+    var produto = await db.Produtos.FindAsync(id);
+
+    if(produto is not null)
     {
 
-        var produto = await db.Produtos.FindAsync(id);
+        db.Produtos.Remove(produto);
+        await db.SaveChangesAsync();
+    }
 
-        if (produto is not null)
-        {
-            db.Produtos.Remove(produto);
-            await db.SaveChangesAsync();
-        }
-
-        return Results.NoContent();
+    return Results.NoContent();
 });
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
